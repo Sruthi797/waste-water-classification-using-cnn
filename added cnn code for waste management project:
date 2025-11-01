@@ -1,0 +1,55 @@
+# Waste Classification using CNN (Demo)
+# Author: Sruthika | College: Rajalakshmi Institute of Technology | Theme: AI/ML in Sustainability
+
+# Step 1: Upload your Kaggle key (kaggle.json)
+from google.colab import files
+files.upload()  # Upload kaggle.json from your Kaggle account
+
+!mkdir ~/.kaggle
+!mv kaggle.json ~/.kaggle/
+!chmod 600 ~/.kaggle/kaggle.json
+
+# Step 2: Download dataset from Kaggle
+!kaggle datasets download -d techsash/waste-classification-data
+!unzip -q waste-classification-data.zip -d waste_data
+
+# Step 3: Import libraries
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+train_dir = '/content/waste_data/DATASET/TRAIN'
+test_dir = '/content/waste_data/DATASET/TEST'
+
+# Step 4: Image Preprocessing
+train_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
+train_gen = train_datagen.flow_from_directory(
+    train_dir, target_size=(128, 128), batch_size=32,
+    subset='training', class_mode='categorical')
+val_gen = train_datagen.flow_from_directory(
+    train_dir, target_size=(128, 128), batch_size=32,
+    subset='validation', class_mode='categorical')
+
+# Step 5: Build CNN Model
+model = tf.keras.models.Sequential([
+    tf.keras.layers.Conv2D(32, (3,3), activation='relu', input_shape=(128,128,3)),
+    tf.keras.layers.MaxPooling2D(2,2),
+    tf.keras.layers.Conv2D(64, (3,3), activation='relu'),
+    tf.keras.layers.MaxPooling2D(2,2),
+    tf.keras.layers.Conv2D(128, (3,3), activation='relu'),
+    tf.keras.layers.MaxPooling2D(2,2),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.Dense(2, activation='softmax')
+])
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model.summary()
+
+# Step 6: Train model on small sample for quick demo
+history = model.fit(train_gen, validation_data=val_gen, epochs=3, steps_per_epoch=30, validation_steps=10)
+
+# Step 7: Evaluate model
+loss, acc = model.evaluate(val_gen)
+print(f"Validation Accuracy: {acc*100:.2f}%")
+
